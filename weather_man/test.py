@@ -9,7 +9,7 @@ months = ['January', 'February', 'March',  # All month names
 
 class FilesNames:  # handling file names with this class
     @staticmethod
-    def file_names_whole_year(path, year):  # Getting the names of all file names with specific year
+    def file_names_of_whole_year(path, year):  # Getting the names of all file names with specific year
         path_to_file = f"{path}/Murree_weather_{year}_{'*'}.txt"
         names_of_files = glob.glob(path_to_file)  # returns list of files names which matches
         if not names_of_files:  # raising exception if file not found
@@ -17,20 +17,27 @@ class FilesNames:  # handling file names with this class
         return names_of_files
 
     @staticmethod
-    def file_name(path, year, month):  # getting the name of file with year and month
+    def get_data_of_single_file(path, year, month):  # getting the name of file with year and month
         mon = months[month - 1]
         path_to_file = f"{path}/Murree_weather_{year}_{mon[:3]}.txt"
         name_of_file = glob.glob(path_to_file)
         if not name_of_file:
             raise Exception("File not found")
-        return name_of_file
+        name1 = ""
+        name1 = name1.join(name_of_file)  # file_name is list to convert to str
+        data1 = []  # to store the data of file
+        with open(name1, 'r') as file1:
+            for row in file1:
+                temp1 = (row.strip()).split(',')
+                data1.append(temp1)
+        return data1
 
 
 class TemperatureStats(FilesNames):  # to find average, max and min values of dataset
     @staticmethod
     def maximum_num(data1, max_num, date, idx):
         for indx in range(1, len(data1)):
-            if data1[indx][idx].isnumeric():  # it skips the iteration if this condition is true
+            if data1[indx][idx] != '':  # it skips the iteration if this condition is true
                 number = int(data1[indx][idx])
                 if number > max_num:
                     max_num = number
@@ -40,7 +47,7 @@ class TemperatureStats(FilesNames):  # to find average, max and min values of da
     @staticmethod
     def minimum_num(data1, min_num, date):  # minimum Temperature
         for indx in range(1, len(data1)):
-            if data1[indx][3].isnumeric():
+            if data1[indx][3] != '':
                 number = int(data1[indx][3])
                 if number < min_num:
                     min_num = number
@@ -56,7 +63,7 @@ class TemperatureStats(FilesNames):  # to find average, max and min values of da
     def average(data1, idx):  # Calculating the Average
         _list = []
         for indx in range(1, len(data1)):
-            if data1[indx][idx].isnumeric():
+            if data1[indx][idx] != '':
                 num = int(data1[indx][idx])
                 _list.append(num)
         return sum(_list) / len(_list)
@@ -89,11 +96,9 @@ parser.add_argument('-u', help="Enter year and month for two bar graphical repre
 parser.add_argument('-b', help="Enter year and month for one bar graphical representation")  # 1 line horizontal bar
 parser.add_argument('path_to_file', help="Enter the path where files are located")  # path to file
 args = parser.parse_args()
-# Task 1
 if args.e:  # -e 2004 path_to_file
-    names = TemperatureStats()  # creating object for getting multiple names
-    files_names = names.file_names_whole_year(args.path_to_file, int(args.e))
-    obj = TemperatureStats()
+    obj = TemperatureStats()  # creating object for getting multiple names
+    files_names = obj.file_names_of_whole_year(args.path_to_file, int(args.e))
     max_temp, min_temp, max_humidity = 0, 1000, 0
     date1, date2, date3 = 0, 0, 0
     for names in files_names:
@@ -102,7 +107,7 @@ if args.e:  # -e 2004 path_to_file
             for content in file:  #
                 temp = (content.strip()).split(',')  # separating the row from commas and leading spaces
                 data_set.append(temp)  # making 2D list of a file
-        max_temp, date1 = obj.maximum_num(data_set, max_temp, date1, 1)
+        max_temp, date1 = obj.maximum_num(data_set, max_temp, date1, 1)  # file data, max_value,
         min_temp, date2 = obj.minimum_num(data_set, min_temp, date2)
         max_humidity, date3 = obj.maximum_num(data_set, max_humidity, date3, 7)
     date1 = obj.numerical_month_to_alphabetical(date1)
@@ -111,66 +116,35 @@ if args.e:  # -e 2004 path_to_file
     print(f"Highest: {max_temp}C on {date1}")
     print(f"Lowest: {min_temp}C on {date2}")
     print(f"Humid: {max_humidity}% on {date3}")
-
-# Task 2
 elif args.a:  # average of max temp,  min temp, humidity
-    avg_max_temp, avg_min_temp, avg_humidity = 0, 0, 0
-    name = TemperatureStats()
-    file_name = name.file_name(args.path_to_file,
-                               args.a[:4], int(args.a[5:]))  # name of file with year and month
-    name = ""
-    name = name.join(file_name)  # file_name is list to convert to str
-    data = []  # to store the data of file
-    with open(name, 'r') as file:
-        for row in file:
-            temp = (row.strip()).split(',')
-            data.append(temp)
     obj = TemperatureStats()
+    data = obj.get_data_of_single_file(args.path_to_file,
+                                       args.a[:4], int(args.a[5:]))  # name of file with year and month
     avg_max_temp = obj.average(data, 1)
     avg_min_temp = obj.average(data, 3)
     avg_humidity = obj.average(data, 7)
     print(f"Highest Average: {round(avg_max_temp)}C")
     print(f"Lowest Average: {round(avg_min_temp)}C")
     print(f"Average Humidity: {round(avg_humidity)}%")
-
-# Task 3
 elif args.u:  # min and max temperature in 2 line bars
-    name = TemperatureStats()
-    file_name = name.file_name(args.path_to_file, args.u[:4], int(args.u[5:]))
-    name = ""
-    name = name.join(file_name)
-    data = []
-    with open(name, 'r') as file:
-        for row in file:
-            temp = (row.strip()).split(',')
-            data.append(temp)
+    obj = TemperatureStats()
+    data = obj.get_data_of_single_file(args.path_to_file, args.u[:4], int(args.u[5:]))
     entered_month = months[int(args.u[5:]) - 1]
     print(f"{entered_month} {args.u[:4]}")
     for index in range(1, len(data)):
-        if data[index][1].isnumeric() and data[index][3].isnumeric():
+        if data[index][1].isnumeric() != '' and data[index][3] != '':
             num1 = int(data[index][1])
             num2 = int(data[index][3])
-            obj = TemperatureStats()
             obj.two_horizontal_bars(index, num1, num2)
-
 elif args.b:  # max min temperature in single line horizontal bar
-    name = TemperatureStats
-    file_name = name.file_name(args.path_to_file, args.b[:4], int(args.b[5:]))
-    name = ""
-    name = name.join(file_name)
-    data = []
-    with open(name, 'r') as file:
-        for row in file:
-            temp = (row.strip()).split(',')
-            data.append(temp)
+    obj = TemperatureStats()
+    data = obj.get_data_of_single_file(args.path_to_file, args.b[:4], int(args.b[5:]))
     entered_month = months[int(args.b[5:]) - 1]
     print(f"{entered_month} {args.b[:4]}")
     for index in range(1, len(data)):
-        if data[index][1].isnumeric() and data[index][3].isnumeric():
+        if data[index][1].isnumeric() != '' and data[index][3] != '':
             num1 = int(data[index][1])
             num2 = int(data[index][3])
-            obj = TemperatureStats()
             obj.one_horizontal_bar(index, num1, num2)
-
 else:
     raise Exception("Argument is incorrect")
